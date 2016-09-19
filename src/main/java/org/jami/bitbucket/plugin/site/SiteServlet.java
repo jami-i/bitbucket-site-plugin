@@ -14,6 +14,7 @@ import com.atlassian.bitbucket.user.ApplicationUser;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,8 @@ import java.io.OutputStream;
 public class SiteServlet extends HttpServlet {
 
     private static final Logger log = LoggerFactory.getLogger(SiteServlet.class);
+
+    private static final Duration expires = Duration.standardMinutes(10);
 
     private final RepositoryService repositoryService;
 
@@ -56,7 +59,6 @@ public class SiteServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
         String pathInfo = req.getPathInfo();
         RequestCreator<String> creator = new RequestCreatorImpl();
-
 
         final Request request = creator.create(pathInfo);
 
@@ -94,7 +96,7 @@ public class SiteServlet extends HttpServlet {
                             @Nonnull
                             public OutputStream getStream(@Nonnull String s) throws IOException {
                                 resp.setContentType(s);
-                                resp.setDateHeader("Expires", DateTime.now().plusMinutes(10).withZone(DateTimeZone.UTC).getMillis());
+                                resp.setDateHeader("Expires", getExpiresMillis());
 
                                 return resp.getOutputStream();
                             }
@@ -107,6 +109,13 @@ public class SiteServlet extends HttpServlet {
             }
         }
 
+    }
+
+    private long getExpiresMillis() {
+        return DateTime.now()
+                .plus(expires)
+                .withZone(DateTimeZone.UTC)
+                .getMillis();
     }
 
     private String resolveCommit(Request request, Repository repository) {
